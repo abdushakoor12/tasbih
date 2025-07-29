@@ -1,10 +1,10 @@
 // Service Worker for Tasbih App
 const CACHE_NAME = 'tasbih-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/script.js',
+    './',
+    './index.html',
+    './styles.css',
+    './script.js',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://unpkg.com/dexie@3.2.4/dist/dexie.js'
