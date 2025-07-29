@@ -1,5 +1,5 @@
 // Service Worker for Tasbih App
-const CACHE_NAME = 'tasbih-v1';
+const CACHE_NAME = 'tasbih-v2'; // Updated version to force cache refresh
 const urlsToCache = [
     './',
     './index.html',
@@ -10,27 +10,40 @@ const urlsToCache = [
     'https://unpkg.com/dexie@3.2.4/dist/dexie.js'
 ];
 
-// Install event - cache resources
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
-            })
-    );
-});
+// Install event is now handled at the bottom of the file
 
-// Fetch event - serve from cache when offline
+// Fetch event - network first strategy for development
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Return cached version or fetch from network
-                return response || fetch(event.request);
-            }
-        )
-    );
+    // Skip caching for local development files to ensure immediate updates
+    if (event.request.url.includes('localhost') || event.request.url.includes('127.0.0.1')) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    // Clone the response before caching
+                    const responseClone = response.clone();
+                    
+                    // Update cache with fresh content
+                    caches.open(CACHE_NAME)
+                        .then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                    
+                    return response;
+                })
+                .catch(() => {
+                    // Fallback to cache when network fails
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // For external resources, use cache-first strategy
+        event.respondWith(
+            caches.match(event.request)
+                .then((response) => {
+                    return response || fetch(event.request);
+                })
+        );
+    }
 });
 
 // Activate event - clean up old caches
@@ -46,5 +59,38 @@ self.addEventListener('activate', (event) => {
                 })
             );
         })
+    );
+    // Take control of all clients immediately
+    self.clients.claim();
+});
+
+// Message event - handle cache clearing requests
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'CLEAR_CACHE') {
+        event.waitUntil(
+            caches.keys().then((cacheNames) => {
+                return Promise.all(
+                    cacheNames.map((cacheName) => {
+                        console.log('Clearing cache:', cacheName);
+                        return caches.delete(cacheName);
+                    })
+                );
+            }).then(() => {
+                // Notify the client that cache has been cleared
+                event.ports[0].postMessage({ success: true });
+            })
+        );
+    }
+});
+
+// Skip waiting to activate immediately
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
+            })
     );
 });

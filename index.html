@@ -15,9 +15,14 @@
                 <h1><i class="fas fa-prayer-beads"></i> Tasbih</h1>
                 <p>Digital Prayer Counter</p>
             </div>
-            <button class="add-adhkar-btn" id="addAdhkarBtn">
-                <i class="fas fa-plus"></i> Add Adhkar
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="add-adhkar-btn" id="addAdhkarBtn">
+                    <i class="fas fa-plus"></i> Add Adhkar
+                </button>
+                <button class="clear-cache-btn" id="clearCacheBtn" onclick="clearAppCache()" title="Clear App Cache (Ctrl+Shift+R)">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
         </header>
 
         <main class="main-content">

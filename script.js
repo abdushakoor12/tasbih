@@ -28,6 +28,14 @@ function setupEventListeners() {
             hideAddModal();
         }
     });
+    
+    // Add keyboard shortcut for cache clearing (Ctrl+Shift+R)
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+            e.preventDefault();
+            clearAppCache();
+        }
+    });
 }
 
 // Load adhkars from database
@@ -65,6 +73,19 @@ function renderAdhkars() {
     const adhkarGrid = document.getElementById('adhkarGrid');
     const emptyState = document.getElementById('emptyState');
     
+    // Separate active and completed adhkars
+    const activeAdhkars = [];
+    const completedAdhkars = [];
+    
+    adhkars.forEach(adhkar => {
+        const currentCount = todaysCounts[adhkar.id] || 0;
+        if (currentCount >= adhkar.dailyLimit) {
+            completedAdhkars.push(adhkar);
+        } else {
+            activeAdhkars.push(adhkar);
+        }
+    });
+    
     if (adhkars.length === 0) {
         adhkarGrid.classList.add('hidden');
         emptyState.classList.remove('hidden');
@@ -74,7 +95,8 @@ function renderAdhkars() {
     adhkarGrid.classList.remove('hidden');
     emptyState.classList.add('hidden');
     
-    adhkarGrid.innerHTML = adhkars.map(adhkar => {
+    // Render active adhkars
+    const activeAdhkarsHTML = activeAdhkars.map(adhkar => {
         const currentCount = todaysCounts[adhkar.id] || 0;
         const remaining = Math.max(0, adhkar.dailyLimit - currentCount);
         const progress = Math.min(100, (currentCount / adhkar.dailyLimit) * 100);
@@ -106,14 +128,72 @@ function renderAdhkars() {
                     <div class="count-label">Today's Count</div>
                 </div>
                 
-                <button class="counter-btn" onclick="incrementCount(${adhkar.id})" ${currentCount >= adhkar.dailyLimit ? 'style="opacity: 0.6;"' : ''}>
-                    ${currentCount >= adhkar.dailyLimit ? 
-                        '<i class="fas fa-check"></i> Target Completed!' : 
-                        '<i class="fas fa-plus"></i> Count (+1)'}
+                <button class="counter-btn" onclick="incrementCount(${adhkar.id})">
+                    <i class="fas fa-plus"></i> Count (+1)
                 </button>
             </div>
         `;
     }).join('');
+    
+    // Render completed adhkars section
+    const completedAdhkarsHTML = completedAdhkars.length > 0 ? `
+        <div class="completed-section" id="completedSection">
+            <div class="completed-header" onclick="toggleCompletedSection()">
+                <div class="completed-title">
+                    <i class="fas fa-check-circle"></i>
+                    Completed Today
+                    <span class="completed-count">${completedAdhkars.length}</span>
+                </div>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="completed-content">
+                <div class="completed-grid">
+                    ${completedAdhkars.map(adhkar => {
+                        const currentCount = todaysCounts[adhkar.id] || 0;
+                        const progress = 100;
+                        
+                        return `
+                            <div class="completed-adhkar-card fade-in" data-id="${adhkar.id}">
+                                <div class="completed-badge">
+                                    <i class="fas fa-check"></i> Completed
+                                </div>
+                                <div class="adhkar-header">
+                                    <div>
+                                        <div class="adhkar-name">${escapeHtml(adhkar.name)}</div>
+                                        ${adhkar.text ? `<div class="adhkar-text">${escapeHtml(adhkar.text)}</div>` : ''}
+                                    </div>
+                                    <button class="delete-btn" onclick="deleteAdhkar(${adhkar.id})" title="Delete Adhkar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="progress-section">
+                                    <div class="progress-info">
+                                        <span>Progress: ${currentCount}/${adhkar.dailyLimit}</span>
+                                        <span>✅ Target Achieved!</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="count-display">
+                                    <div class="current-count">${currentCount}</div>
+                                    <div class="count-label">Today's Count</div>
+                                </div>
+                                
+                                <button class="counter-btn" onclick="incrementCount(${adhkar.id})" style="opacity: 0.8;">
+                                    <i class="fas fa-plus"></i> Continue Counting
+                                </button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+    ` : '';
+    
+    adhkarGrid.innerHTML = activeAdhkarsHTML + completedAdhkarsHTML;
 }
 
 // Escape HTML to prevent XSS
@@ -121,6 +201,14 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Toggle completed section visibility
+function toggleCompletedSection() {
+    const completedSection = document.getElementById('completedSection');
+    if (completedSection) {
+        completedSection.classList.toggle('expanded');
+    }
 }
 
 // Show add adhkar modal
@@ -387,7 +475,33 @@ if ('serviceWorker' in navigator) {
 }
 
 // Export functions for global access
+// Clear cache function for development
+function clearAppCache() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = function(event) {
+            if (event.data.success) {
+                console.log('Cache cleared successfully');
+                showNotification('Cache cleared! Refreshing page...', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        };
+        
+        navigator.serviceWorker.controller.postMessage(
+            { type: 'CLEAR_CACHE' },
+            [messageChannel.port2]
+        );
+    } else {
+        // Fallback: just reload the page
+        window.location.reload(true);
+    }
+}
+
 window.showAddModal = showAddModal;
 window.hideAddModal = hideAddModal;
 window.incrementCount = incrementCount;
 window.deleteAdhkar = deleteAdhkar;
+window.toggleCompletedSection = toggleCompletedSection;
+window.clearAppCache = clearAppCache;
