@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasbih - Digital Prayer Counter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1><i class="fas fa-prayer-beads"></i> Tasbih</h1>
+                <p>Digital Prayer Counter</p>
+            </div>
+            <button class="add-adhkar-btn" id="addAdhkarBtn">
+                <i class="fas fa-plus"></i> Add Adhkar
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="adhkar-grid" id="adhkarGrid">
+                <!-- Adhkar cards will be dynamically inserted here -->
+            </div>
+
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-prayer-beads"></i>
+                <h3>No Adhkar Added Yet</h3>
+                <p>Start by adding your first adhkar to begin your spiritual journey</p>
+                <button class="btn-primary" onclick="showAddModal()">Add Your First Adhkar</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Adhkar Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Adhkar</h3>
+                <button class="close-btn" onclick="hideAddModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="adhkarForm">
+                    <div class="form-group">
+                        <label for="adhkarName">Adhkar Name</label>
+                        <input type="text" id="adhkarName" placeholder="e.g., SubhanAllah, Alhamdulillah" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adhkarText">Adhkar Text (Optional)</label>
+                        <textarea id="adhkarText" placeholder="Enter the full text of the adhkar" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="dailyLimit">Daily Target</label>
+                        <input type="number" id="dailyLimit" value="100" min="1" max="10000" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="hideAddModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Adhkar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
